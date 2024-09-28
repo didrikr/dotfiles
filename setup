@@ -1,0 +1,80 @@
+#!/usr/bin/bash
+
+# Install basic programs
+sudo apt install git vim stow curl python3 python3-pip nodejs
+
+# Oh-my-zsh
+sudo apt install zsh
+chsh -s $(which zsh)
+sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)"
+
+# Zoxide file navigation
+# (many package repositories also work)
+if ! command -v z 2>^1 >/dev/null
+then
+	curl -sSfL https://raw.githubusercontent.com/ajeetdsouza/zoxide/main/install.sh | sh
+	sudo apt install fzf
+fi
+
+# Rust and cargo
+if ! command -v rustup 2>^1 >/dev/null 
+then
+	curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+	mv ../.zshenv dotfiles/
+	export PATH="$PATH:$HOME/.cargo/bin"
+fi
+
+# NeoVIM
+if ! command -v nvim 2>^1 >/dev/null
+then
+	curl -LO https://github.com/neovim/neovim/releases/latest/download/nvim-linux64.tar.gz
+	sudo rm -rf /opt/nvim
+	sudo tar -C /opt -xzf nvim-linux64.tar.gz
+	rm nvim-linux64.tar.gz
+	# Remove default NeoVim config so we can set up our own
+	rm -r ~/.config/nvim
+fi
+# For now, use AstroNvim
+# Dependencies
+cargo install tree-sitter-cli
+sudo apt install xclip ripgrep
+cargo install bottom --locked
+# LazyGit
+if ! command -v lazygit 2>^1 >/dev/null
+then
+	LAZYGIT_VERSION=$(curl -s "https://api.github.com/repos/jesseduffield/lazygit/releases/latest" | grep -Po '"tag_name": "v\K[^"]*')
+	curl -Lo lazygit.tar.gz "https://github.com/jesseduffield/lazygit/releases/latest/download/lazygit_${LAZYGIT_VERSION}_Linux_x86_64.tar.gz"
+	tar xf lazygit.tar.gz lazygit
+	sudo install lazygit /usr/local/bin
+	rm lazygit.tar.gz
+	rm lazygit
+fi
+# Go DiskUsage
+if ! command -v gdu 2>^1 >/dev/null
+then
+	curl -L https://github.com/dundee/gdu/releases/latest/download/gdu_linux_amd64.tgz | tar xz
+	chmod +x gdu_linux_amd64
+	sudo mv gdu_linux_amd64 /usr/bin/gdu
+fi
+# AstroNvim
+mkdir .config
+git clone --depth 1 https://github.com/AstroNvim/template .config/nvim
+rm -rf .config/nvim/.git
+
+# Fancy font
+fc-cache
+
+# Kitty
+sudo apt install kitty
+rm -r $HOME/.config/kitty
+
+# Tmux
+sudo apt install tmux
+git clone https://github.com/tmux-plugins/tpm .tmux/plugins/tpm
+
+# Cleanup
+sudo apt autoremove
+rm '^1'
+
+# Set up dotfiles
+stow . --ignore setup
